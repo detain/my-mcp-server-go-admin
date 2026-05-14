@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"reflect"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -186,6 +187,13 @@ func (h *ToolHandler) formatResponse(data any) (string, error) {
 	// If it's a string, return it directly
 	if str, ok := data.(string); ok {
 		return str, nil
+	}
+
+	// MCP requires structuredContent to be a JSON object, not a list.
+	// ~89 OpenAPI endpoints (getVpsList, getDomainsList, admin list*, etc.)
+	// return top-level arrays; wrap them so clients receive a valid object.
+	if reflect.TypeOf(data).Kind() == reflect.Slice {
+		data = map[string]any{"items": data}
 	}
 
 	// Otherwise, marshal as JSON
